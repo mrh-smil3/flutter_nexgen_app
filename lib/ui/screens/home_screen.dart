@@ -55,10 +55,10 @@ class ErrorWidgetWithReload extends StatelessWidget {
   final VoidCallback onRetry;
 
   const ErrorWidgetWithReload({
-    Key? key,
+    super.key,
     required this.error,
     required this.onRetry,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +68,8 @@ class ErrorWidgetWithReload extends StatelessWidget {
         children: [
           Text(
             'Error: $error',
-            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            style:
+                const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),

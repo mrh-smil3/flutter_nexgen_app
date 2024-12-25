@@ -1,4 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const storage = FlutterSecureStorage();
 
@@ -22,11 +23,14 @@ Future<void> saveUserData(
 }
 
 // Menghapus token dan data pengguna dari local storage
+// Menghapus data pengguna
 Future<void> clearUserData() async {
-  await storage.delete(key: 'auth_token');
-  await storage.delete(key: 'user_id');
-  await storage.delete(key: 'user_name');
-  await storage.delete(key: 'user_email');
+  final prefs = await SharedPreferences.getInstance();
+  // Hapus token dan data terkait pengguna
+  await prefs.remove('auth_token');
+  await prefs.remove('user_id');
+  await prefs.remove('user_name');
+  await prefs.remove('user_email'); // Jika ada data pengguna lainnya
 }
 
 // // Update data pengguna

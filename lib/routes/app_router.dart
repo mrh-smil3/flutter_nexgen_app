@@ -4,6 +4,7 @@ import '../ui/screens/packages_screen.dart';
 import '../ui/screens/profile_screen.dart';
 import '../ui/screens/transaction_screen.dart';
 import '../ui/screens/home_screen_navigator.dart';
+import '../ui/screens/splash_screen.dart';
 import 'package:go_router/go_router.dart';
 
 final GoRouter router = GoRouter(
@@ -22,6 +23,12 @@ final GoRouter router = GoRouter(
       },
       routes: [
         // Routes untuk setiap tab
+        GoRoute(
+          path: '/splash',
+          builder: (context, state) {
+            return SplashScreen();
+          },
+        ),
         GoRoute(
           path: '/home',
           builder: (context, state) => const HomeScreen(),

@@ -1,25 +1,26 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../data/models/subscription.dart';
 import 'local_storage.dart';
 
 class ApiService {
   final String baseUrl =
       'http://10.0.2.2:8000/api'; // Ubah dengan URL API Laravel Anda
-
+  // 'https://app.nex-gen.id/api';
+  final FlutterSecureStorage storage = const FlutterSecureStorage();
   // Method untuk melakukan request PUT update profile
   Future<Map<String, dynamic>> updateProfile(
       String userId, String name, String email) async {
-    final url =
-        Uri.parse('$baseUrl/users/$userId'); // URL endpoint update profil
-    String? token =
-        await storage.read(key: 'auth_token'); // Ambil token dari penyimpanan
+    final url = Uri.parse('$baseUrl/users/$userId'); // Endpoint update profile
+    String? token = await storage.read(key: 'auth_token'); // Ambil token
+
     try {
       final response = await http.put(
         url,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token', // Kirim token jika diperlukan
+          'Authorization': 'Bearer $token', // Kirim token
         },
         body: json.encode({
           'name': name,
@@ -28,10 +29,17 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        return json
-            .decode(response.body); // Mengembalikan data response jika sukses
+        final data = json.decode(response.body);
+
+        // Perbarui token jika diperlukan
+        if (data['token'] != null) {
+          await storage.write(key: 'auth_token', value: data['token']);
+        }
+
+        return data; // Kembalikan seluruh data
       } else {
-        throw Exception('Failed to update profile');
+        throw Exception(
+            'Failed to update profile: ${response.body}'); // Error detail
       }
     } catch (e) {
       throw Exception('Error during profile update: $e');
@@ -101,26 +109,57 @@ class ApiService {
     }
   }
 
-  // Method untuk mendapatkan status berlangganan
-  Future<Map<String, dynamic>> getSubscriptionStatus() async {
-    final url = Uri.parse(
-        '$baseUrl/subscriptions'); // URL endpoint untuk status berlangganan
-    String? token = await const FlutterSecureStorage()
-        .read(key: 'auth_token'); // Ambil token
+  // Fungsi untuk mendapatkan data packages
+  Future<List<Map<String, dynamic>>> getPackages() async {
+    final url = Uri.parse('$baseUrl/packages');
+    String? token = await const FlutterSecureStorage().read(key: 'auth_token');
 
     try {
       final response = await http.get(
         url,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token', // Kirim token jika diperlukan
+          'Authorization': 'Bearer $token',
         },
       );
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        return json.decode(response.body); // Berhasil mendapatkan daftar paket
+      } else {
+        throw Exception('Failed to load packages');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  // Method untuk mendapatkan status berlangganan
+  Future<Map<String, dynamic>> getSubscriptionStatus() async {
+    final url = Uri.parse('$baseUrl/subscriptions');
+    String? token = await const FlutterSecureStorage().read(key: 'auth_token');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Decode JSON dan cek apakah respons berupa List
+        final data = json.decode(response.body);
+
+        if (data is List && data.isNotEmpty) {
+          // Ambil elemen pertama jika data adalah List
+          return data.first as Map<String, dynamic>;
+        } else {
+          // Tangani kasus List kosong
+          return {'status': 'Not Found', 'message': 'Subscription not found'};
+        }
       } else if (response.statusCode == 404) {
-        // Tangani 404 sebagai respons valid untuk pengguna tanpa langganan
+        // Jika endpoint mengembalikan 404
         return {'status': 'Not Found', 'message': 'Subscription not found'};
       } else {
         throw Exception(
@@ -128,6 +167,89 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Error fetching subscription status: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getSubscriptions() async {
+    final url = Uri.parse('$baseUrl/subscriptions');
+    String? token = await const FlutterSecureStorage().read(key: 'auth_token');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Decode JSON dan pastikan data berupa List
+        final List<dynamic> data = json.decode(response.body);
+
+        if (data.isNotEmpty) {
+          return data
+              .map((e) => e as Map<String, dynamic>)
+              .toList(); // Mengembalikan seluruh list data
+        } else {
+          return []; // Jika data kosong
+        }
+      } else {
+        throw Exception('Failed to load subscriptions: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching subscriptions: $e');
+    }
+  }
+
+  // Fungsi untuk membuat subscription baru
+  Future<Map<String, dynamic>> createSubscription(
+      Subscription subscription) async {
+    final url = Uri.parse('$baseUrl/subscriptions');
+    final token = await const FlutterSecureStorage()
+        .read(key: 'auth_token'); // Simpan token di secure storage
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(subscription.toJson()),
+      );
+
+      if (response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to create subscription: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  // Method untuk logout
+  Future<Map<String, dynamic>> logout(String token) async {
+    final url = Uri.parse('$baseUrl/logout'); // Endpoint logout
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Sertakan token di header
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json
+            .decode(response.body); // Mengembalikan response jika berhasil
+      } else {
+        throw Exception('Failed to logout: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error during logout: $e'); // Menangani error
     }
   }
 }

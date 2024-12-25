@@ -6,6 +6,10 @@ allprojects {
     }
 
 }
+tasks.withType(JavaCompile).configureEach {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
 
 rootProject.buildDir = "../build"
 subprojects {
@@ -18,3 +22,4 @@ subprojects {
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
+//classpath 'com.android.tools.build:gradle:8.1.0'

@@ -21,12 +21,15 @@ class PackageGridView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
+      shrinkWrap: true,
+      physics:
+          const NeverScrollableScrollPhysics(), // Agar tidak bentrok scroll
       padding: const EdgeInsets.all(16.0),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2, // Dua kolom
         mainAxisSpacing: 16.0, // Jarak antar baris
         crossAxisSpacing: 16.0, // Jarak antar kolom
-        childAspectRatio: 2, // Rasio aspek (lebar/tinggi) kartu lebih ramping
+        childAspectRatio: 0.8, // Rasio aspek (lebar/tinggi) kartu lebih ramping
       ),
       itemCount: packages.length,
       itemBuilder: (context, index) {
